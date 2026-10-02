@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
-import { Container, Typography, Card, CardContent, Grid, Box, AppBar, Toolbar, CircularProgress } from '@mui/material';
+import { useEffect, useState, FormEvent } from 'react';
+import { Container, Typography, Card, CardContent, Grid, Box, AppBar, Toolbar, CircularProgress, TextField, Button, Paper } from '@mui/material';
 import WorkIcon from '@mui/icons-material/Work';
+import AddCircleIcon from '@mui/icons-material/AddCircle';
 
-// Explicitly define our Type interface to prevent compilation bugs
 interface Job {
-  id: number;
+  id?: number;
   title: string;
   company: string;
   location: string;
@@ -17,14 +17,20 @@ function App() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Hook into our lifecycle to reach out and pull data from our Spring Boot API engine
-  useEffect(() => {
+  // Form State Vectors
+  const [title, setTitle] = useState('');
+  const [company, setCompany] = useState('');
+  const [location, setLocation] = useState('');
+  const [jobUrl, setJobUrl] = useState('');
+  const [source, setSource] = useState('');
+  const [submitLoading, setSubmitLoading] = useState(false);
+
+  // Asynchronously fetch current entries from Spring Boot API core
+  const fetchJobs = () => {
     fetch('http://192.168.56.101:8080/api/v1/jobs')
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error('Failed to communicate with our system API gateway backend.');
-        }
-        return response.json();
+      .then((res) => {
+        if (!res.ok) throw new Error('API server returned a faulty network status line.');
+        return res.json();
       })
       .then((data) => {
         setJobs(data);
@@ -34,22 +40,94 @@ function App() {
         setError(err.message);
         setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    fetchJobs();
   }, []);
 
+  // Intercept UI click event and transmit payload to the Backend Controller
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!title || !company || !location || !jobUrl || !source) return;
+
+    setSubmitLoading(true);
+    const newJob: Job = { title, company, location, jobUrl, source };
+
+    try {
+      const response = await fetch('http://192.168.56.101:8080/api/v1/jobs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newJob),
+      });
+
+      if (!response.ok) throw new Error('Backend engine rejected data layout parameters.');
+
+      // Clear input fields upon successful write database block execution
+      setTitle('');
+      setCompany('');
+      setLocation('');
+      setJobUrl('');
+      setSource('');
+      
+      // Instantly reload visual cards from storage tier
+      fetchJobs();
+    } catch (err: any) {
+      alert(`Submission Block Failure: ${err.message}`);
+    } finally {
+      setSubmitLoading(false);
+    }
+  };
+
   return (
-    <Box sx={{ flexGrow: 1, bgcolor: '#f5f5f5', minHeight: '100vh' }}>
+    <Box sx={{ flexGrow: 1, bgcolor: '#f5f5f5', minHeight: '100vh', pb: 5 }}>
       <AppBar position="static" sx={{ bgcolor: '#1a237e' }}>
         <Toolbar>
           <WorkIcon sx={{ mr: 2 }} />
           <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
-            JobFindHub Portal — Phase 1 Monolith
+            JobFindHub Portal Management Panel — Phase 2 Stack
           </Typography>
         </Toolbar>
       </AppBar>
 
       <Container sx={{ mt: 5 }}>
+        {/* Modern Form Input Component */}
+        <Paper elevation={3} sx={{ p: 4, mb: 5, borderRadius: 2 }}>
+          <Box display="flex" alignItems="center" mb={3}>
+            <AddCircleIcon sx={{ color: '#1a237e', mr: 1, fontSize: 28 }} />
+            <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#333' }}>
+              Publish New Job Entry Document
+            </Typography>
+          </Box>
+          
+          <form onSubmit={handleSubmit}>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <TextField label="Job Title Name" variant="outlined" fullWidth required value={title} onChange={(e) => setTitle(e.target.value)} />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField label="Company Name" variant="outlined" fullWidth required value={company} onChange={(e) => setCompany(e.target.value)} />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField label="Location (e.g. Remote, India)" variant="outlined" fullWidth required value={location} onChange={(e) => setLocation(e.target.value)} />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField label="Source Platform (e.g. LinkedIn)" variant="outlined" fullWidth required value={source} onChange={(e) => setSource(e.target.value)} />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField label="Job Target URL Destination Link" variant="outlined" fullWidth required value={jobUrl} onChange={(e) => setJobUrl(e.target.value)} />
+              </Grid>
+              <Grid item xs={12}>
+                <Button type="submit" variant="contained" size="large" sx={{ bgcolor: '#1a237e', px: 4, '&:hover': { bgcolor: '#0d1440' } }} disabled={submitLoading}>
+                  {submitLoading ? 'Writing to Database...' : 'Broadcast Job Listing'}
+                </Button>
+              </Grid>
+            </Grid>
+          </form>
+        </Paper>
+
         <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: '#333', mb: 4 }}>
-          Latest Available Job Opportunities
+          Live Aggregated Postings
         </Typography>
 
         {loading && (
@@ -60,13 +138,13 @@ function App() {
 
         {error && (
           <Typography variant="h6" color="error" align="center" my={5}>
-            ⚠️ Error: {error}
+            ⚠️ Connection Lane Blocked: {error}
           </Typography>
         )}
 
         {!loading && !error && jobs.length === 0 && (
           <Typography variant="h6" color="textSecondary" align="center" my={5}>
-            No jobs found in the database. Add data to begin listing!
+            No active jobs in PostgreSQL storage. Publish a card using the form module above!
           </Typography>
         )}
 
