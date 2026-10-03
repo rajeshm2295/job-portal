@@ -1,0 +1,40 @@
+services:
+  postgres-db:
+    image: postgres:15-alpine
+    container_name: jobfindhub-db
+    environment:
+      POSTGRES_DB: jobdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Admin@123
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  backend-api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: jobfindhub-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-db:5432/jobdb
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=Admin@123
+    depends_on:
+      - postgres-db
+
+  frontend-web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: jobfindhub-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend-api
+
+volumes:
+  pgdata:
+
