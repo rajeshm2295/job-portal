@@ -22,7 +22,8 @@ jobs:
             echo "--- Starting Automated CI/CD Deployment Process ---"
 
             # Move inside the verified code workspace directory
-            cd ~/projects/job-portal/project/job-portal/project/job-portal/
+            cd /home/adam/projects/job-portal/project/job-portal/project/job-portal/
+
 
             # Discard any local tracking changes to prevent merge blocks
             git reset --hard origin/main
