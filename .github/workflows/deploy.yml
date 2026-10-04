@@ -15,7 +15,8 @@ jobs:
       - name: Execute Remote SSH Deployment Command Script
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: '192.168.56.101'
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
           username: 'adam'
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
@@ -23,7 +24,6 @@ jobs:
 
             # Move inside the verified code workspace directory
             cd /home/adam/projects/job-portal/project/job-portal/project/job-portal/
-
 
             # Discard any local tracking changes to prevent merge blocks
             git reset --hard origin/main
@@ -35,3 +35,4 @@ jobs:
             echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S docker compose up -d --build
 
             echo "--- Automated Deployment Completed Successfully! Portal is Live! ---"
+
