@@ -1,0 +1,36 @@
+name: JobFindHub Portal CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code Repository Base
+        uses: actions/checkout@v4
+
+      - name: Execute Remote SSH Deployment Command Script
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: '192.168.56.101'
+          username: 'adam'
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            echo "--- Starting Automated CI/CD Deployment Process ---"
+
+            # Move inside the verified code workspace directory
+            cd ~/projects/job-portal/project/job-portal/project/job-portal/
+
+            # Discard any local tracking changes to prevent merge blocks
+            git reset --hard origin/main
+
+            # Pull the fresh updated feature code layers down from GitHub cloud
+            git pull origin main
+
+            # Force Docker Compose to clear cache maps and rebuild the running ecosystem in the background
+            echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S docker compose up -d --build
+
+            echo "--- Automated Deployment Completed Successfully! Portal is Live! ---"
