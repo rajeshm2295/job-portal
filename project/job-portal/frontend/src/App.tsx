@@ -86,7 +86,7 @@ function App() {
         <Toolbar>
           <WorkIcon sx={{ mr: 2 }} />
           <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
-            JobFindHub Portal Management Panel — Phase 2 Stack and
+            JobFindHub Portal Management Panel — Phase 2 Stack
           </Typography>
         </Toolbar>
       </AppBar>
