@@ -1,0 +1,8 @@
+global:
+  scrape_interval: 15s # How often to poll your system layers
+
+scrape_configs:
+  - job_name: 'spring-boot-backend'
+    metrics_path: '/api/v1/actuator/prometheus'
+    static_configs:
+      - targets: ['backend-api:8080'] # Direct internal container network mapping route
