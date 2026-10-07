@@ -1,5 +1,5 @@
 services:
-  # --- 1. Database Service ---
+  # --- 1. Relational Database ---
   postgres-db:
     image: postgres:15-alpine
     container_name: jobfindhub-db
@@ -12,7 +12,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
-  # --- 2. Backend API Service ---
+  # --- 2. Java API Backend ---
   backend-api:
     build:
       context: ./backend
@@ -27,7 +27,7 @@ services:
     depends_on:
       - postgres-db
 
-  # --- 3. Frontend Web Service ---
+  # --- 3. Frontend Web Server ---
   frontend-web:
     build:
       context: ./frontend
@@ -38,7 +38,46 @@ services:
     depends_on:
       - backend-api
 
-  # --- 4. Prometheus Metric Collector ---
+  # --- 4. Node Exporter (VM Host Metric Collector) ---
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: jobfindhub-node-exporter
+    restart: unless-stopped
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/rootfs'
+
+  # --- 5. cAdvisor (Individual Container Metric Collector) ---
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: jobfindhub-cadvisor
+    restart: unless-stopped
+    privileged: true
+    devices:
+      - /dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+
+  # --- 6. Postgres Exporter (Database Internals Collector) ---
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: jobfindhub-postgres-exporter
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: "postgresql://postgres:Admin@123@postgres-db:5432/jobdb?sslmode=disable"
+    depends_on:
+      - postgres-db
+
+  # --- 7. Prometheus Metric Storage Engine ---
   prometheus:
     image: prom/prometheus:latest
     container_name: jobfindhub-prometheus
@@ -48,15 +87,18 @@ services:
       - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     depends_on:
       - backend-api
+      - node-exporter
+      - cadvisor
+      - postgres-exporter
 
-  # --- 5. Grafana Observability Dashboard Control Tower ---
+  # --- 8. Grafana Analytics Analytics Dashboard Control Tower ---
   grafana:
     image: grafana/grafana:latest
     container_name: jobfindhub-grafana
     ports:
       - "3000:3000"
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin # Default entry password layout
+      - GF_SECURITY_ADMIN_PASSWORD=admin
     depends_on:
       - prometheus
 
